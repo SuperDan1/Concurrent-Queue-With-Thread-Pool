@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "queue.h"
 
-node *initNode(char c[LENTH])
+node *initNode(int value)
 {
 	node *h = NULL;
 	h = (node *)malloc(sizeof(node));
@@ -12,62 +12,81 @@ node *initNode(char c[LENTH])
 		printf("can not malloc struct node memory;");
 		exit(1);
 	}
-	h->m_content = (char *)malloc(sizeof(char) * LENTH);
-	strcpy(h->m_content, c);
-	printf("init success  \n");
-	h->p_next = NULL;
+	h->content = value;
+	// printf("init success  \n");
+	h->next = NULL;
 	return h;
 }
 
 queue *initQueue()
 {
-	queue *q;
+	queue *q = NULL;
+	node *n = NULL;
+	n = initNode(0);
 	q = (queue *)malloc(sizeof(queue));
 	if (q == NULL)
 	{
 		printf("can not malloc struct node memory;");
 		exit(1);
 	}
-	q->q_head = NULL;
-	q->q_tail = NULL;
+	q->q_head = n;
+	q->q_tail = n;
+	q->size = 0;
+	pthread_mutex_init(&q->q_head_lock, NULL);
+	pthread_mutex_init(&q->q_tail_lock, NULL);
 	return q;
 };
 
-void pushQueue(queue *q, char c[LENTH])
+void pushQueue(queue *q, int value)
 {
 	node *n = NULL;
-	n = initNode(c);
-	if (q->q_tail == NULL)
-	{ // queue is empty
-		q->q_head = n;
-		q->q_tail = n;
-	}
-	else
-	{
-		q->q_tail->p_next = n;
-		q->q_tail = n;
-	}
-	printf("put: %s\n", q->q_tail->m_content);
+	n = initNode(value);
+
+	pthread_mutex_lock(&q->q_tail_lock);
+	q->q_tail->next = n;
+	q->q_tail = n;
+	q->size++;
+	//printf("num: %d\n", q->size);
+	pthread_mutex_unlock(&q->q_tail_lock);
+
+	//printf("put: %s\n", q->q_tail->content);
 }
 
-char *popQueue(queue *q)
+int popQueue(queue *q)
 {
-	char *c;
-	if (q->q_head == NULL)
+	int val;
+	node *h = NULL;
+	node *newh = NULL;
+	pthread_mutex_lock(&q->q_head_lock);
+	newh = q->q_head->next;
+	if (newh == NULL)
 	{
-		c = "0";
-		return c;
+		if (IsQueueEmpty(q))
+		{
+			printf("queue is empty , sleep for a while\n");
+		}
+		pthread_mutex_unlock(&q->q_head_lock);
+		return 0;
 	}
-	node *h;
-	h = q->q_head;
-	c = h->m_content;
-	printf("get: %s\n", c);
-	q->q_head = q->q_head->p_next;
-	free(h); //这里不能c指针   回收以后c指针的返回值 会出问题
-	return c;
+	h = q->q_head->next->next;
+	q->q_head->next = h;
+	val = newh->content;
+	//printf("get: %d\n", val);
+	//printf("head: %d\n", q->q_head->content);
+
+	free(newh);
+	q->size--;
+	//printf("num: %d\n", q->size);
+
+	pthread_mutex_unlock(&q->q_head_lock);
+	return val;
 }
 
-bool LQueueEmpty(queue *q)
+bool IsQueueEmpty(queue *q)
 {
-	return q->queueNum == 0;
+	bool IsEmpty = false;
+	pthread_mutex_lock(&q->q_head_lock);
+	IsEmpty = q->size == 0;
+	pthread_mutex_unlock(&q->q_head_lock);
+	return IsEmpty;
 }
