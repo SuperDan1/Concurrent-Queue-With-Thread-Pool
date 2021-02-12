@@ -1,12 +1,13 @@
+#ifndef QUEUE_H
+#define QUEUE_H
+
 #include <inttypes.h>
 #include <stdbool.h>
 #include <pthread.h>
 
-#define LENTH 10240
-
 typedef struct node
 {
-    void *content;
+    int content;
     struct node *next;
 } node;
 
@@ -23,7 +24,9 @@ typedef struct queue
 node *initNode();
 queue *initQueue();
 
-void pushQueue(queue *q, char content[LENTH]);
-char *popQueue(queue *q);
+void pushQueue(queue *q, int val);
+int popQueue(queue *q);
 
 bool IsQueueEmpty(queue *q);
+
+#endif

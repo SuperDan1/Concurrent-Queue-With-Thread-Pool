@@ -8,58 +8,80 @@
 #include <stdatomic.h>
 #include "queue.h"
 
-struct threadArgs
+_Atomic long counter = ATOMIC_VAR_INIT(0L);
+
+typedef struct threadArgs
 {
-    struct queue *q;
-    char *c;
-};
+    queue *q;
+    int val;
+} threadArgs;
 
 void *putArg(void *params)
 {
-    struct threadArgs *args = params;
-    pushQueue(args->q, args->c);
+    threadArgs *args = params;
+    pushQueue(args->q, args->val);
+    
 }
 
-_Atomic long counter = ATOMIC_VAR_INIT(0L);
+void *popArg(void *params)
+{
+    queue *args = params;
+    int v;
+
+    while (1)
+    {
+        v = popQueue(args);
+        if (v)
+        {
+            atomic_fetch_add(&counter, v);
+        }
+        else
+        {
+            printf("%d\n", v);
+            sleep(1);
+            if (IsQueueEmpty(args))
+            {
+                break;
+            }
+        }
+    }
+}
 
 int main()
 {
-    pthread_t tids[NUM_THREADS]; //线程id
-    uint32_t index = 50;
-    struct queue *g_q;
-    g_q = initQueue();
-    char c[LENTH] = "test\0";
-    char b[LENTH] = "btest\0";
-    char a[LENTH] = "atest\0";
-    char *h = NULL;
+    pthread_t tids[NUM_THREADS * 2]; //线程id
+    queue *g_q;
+    int v;
     int i;
-    clock_t start, end;
+    int res;
     struct timespec start_, end_;
 
     clock_gettime(CLOCK_REALTIME, &start_);
+    g_q = initQueue();
+    if (g_q == NULL)
+    {
+        printf("init queue failed!\n");
+        return 0;
+    }
     for (i = 0; i < NUM_THREADS; ++i)
     {
         struct threadArgs *args = NULL;
         args = (struct threadArgs *)malloc(sizeof(struct threadArgs));
         args->q = g_q;
-        args->c = c;
+        args->val = 1;
         pthread_create(&tids[i], NULL, putArg, args);
     }
 
-    while (index--)
+    for (i = 0; i < 10; ++i)
     {
-        h = popQueue(g_q);
-        if (h)
-        {
-            //printf("%s\n", h);
-            sleep(1);
-        }
-        else if (IsQueueEmpty(g_q))
-        {
-            printf("queue is empty , sleep for a while\n");
-            sleep(3);
-        }
+        queue *popargs = NULL;
+        popargs = (queue *)malloc(sizeof(queue));
+        popargs = g_q;
+        pthread_create(&tids[i + NUM_THREADS], NULL, popArg, popargs);
     }
+    sleep(1);
+    res = atomic_load(&counter);
+    printf("sum is %d\n", res);
     clock_gettime(CLOCK_REALTIME, &end_);
     printf("run time is %lf s\n", (double)(end_.tv_nsec - start_.tv_nsec) / 1000000);
     return 0;
