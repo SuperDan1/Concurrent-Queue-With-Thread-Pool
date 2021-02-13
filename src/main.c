@@ -1,5 +1,3 @@
-#define NUM_THREADS 200
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,34 +7,37 @@
 #include "queue.h"
 #include "thread_pool_manage.h"
 
+#define NUM_THREADS 200
+
 _Atomic long counter = ATOMIC_VAR_INIT(0L);
 
 typedef struct threadArgs
 {
-    queue *q;
+    listQueue *queue;
     int val;
+    int32_t retVal;
 } threadArgs;
 
 void *putArg(void *params)
 {
     threadArgs *args = params;
-    pushQueue(args->q, &args->val);
+    args->retVal = pushQueue(args->queue, &args->val);
 }
 
 void *popArg(void *params)
 {
-    queue *args = params;
+    listQueue *args = params;
     int v;
     while (1)
     {
-        v = popQueue(args);
+        popQueue(args, (void *)&v);
         if (v)
         {
             atomic_fetch_add(&counter, v);
         }
         else
         {
-            printf("%d\n", v);
+            //printf("%d\n", v);
             sleep(1);
             if (IsQueueEmpty(args))
             {
@@ -48,34 +49,36 @@ void *popArg(void *params)
 
 int main()
 {
+    uint32_t retVal;
     pthread_t tids[NUM_THREADS * 2]; //线程id
-    queue *g_q;
+    listQueue g_q;
     int v;
     int i;
     int res;
     struct timespec start_, end_;
 
     clock_gettime(CLOCK_REALTIME, &start_);
-    g_q = initQueue(sizeof(int));
-    if (g_q == NULL)
+    retVal = initQueue(&g_q, sizeof(int));
+    if (unlikely(retVal != RETURN_OK))
     {
-        printf("init queue failed!\n");
-        return 0;
+        printf("init listQueue failed!\n");
+        return -1;
     }
     for (i = 0; i < NUM_THREADS; ++i)
     {
         struct threadArgs *args = NULL;
         args = (struct threadArgs *)malloc(sizeof(struct threadArgs));
-        args->q = g_q;
+        args->queue = &g_q;
         args->val = 1;
         pthread_create(&tids[i], NULL, putArg, args);
     }
+    sleep(5);
+    //ShowQueueValue(&g_q);
 
     for (i = 0; i < 10; ++i)
     {
-        queue *popargs = NULL;
-        popargs = (queue *)malloc(sizeof(queue));
-        popargs = g_q;
+        listQueue *popargs = NULL;
+        popargs = &g_q;
         pthread_create(&tids[i + NUM_THREADS], NULL, popArg, popargs);
     }
     sleep(1);
