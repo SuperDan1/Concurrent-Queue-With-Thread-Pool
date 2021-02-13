@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "queue.h"
 
-node *initNode(int value)
+node *initNode(void *value, uint32_t data_size)
 {
 	node *h = NULL;
 	h = (node *)malloc(sizeof(node));
@@ -12,37 +12,46 @@ node *initNode(int value)
 		printf("can not malloc struct node memory;");
 		exit(1);
 	}
-	h->content = value;
+	h->content = (void *)malloc(sizeof(data_size));
+	memcpy(h->content, value, data_size);
 	// printf("init success  \n");
 	h->next = NULL;
 	return h;
 }
 
-queue *initQueue()
+queue *initQueue(uint32_t data_size)
 {
 	queue *q = NULL;
 	node *n = NULL;
-	n = initNode(0);
+	int value = 0;
 	q = (queue *)malloc(sizeof(queue));
 	if (q == NULL)
 	{
 		printf("can not malloc struct node memory;");
 		exit(1);
 	}
+	q->data_size = data_size;
+	n = initNode(&value, data_size);
 	q->q_head = n;
 	q->q_tail = n;
+	q->max_size = 200;
 	q->size = 0;
 	pthread_mutex_init(&q->q_head_lock, NULL);
 	pthread_mutex_init(&q->q_tail_lock, NULL);
 	return q;
 };
 
-void pushQueue(queue *q, int value)
+void pushQueue(queue *q, void *value)
 {
 	node *n = NULL;
-	n = initNode(value);
-
+	n = initNode(value, q->data_size);
 	pthread_mutex_lock(&q->q_tail_lock);
+	if (q->size == q->max_size)
+	{
+		//printf("queue size reaches max size.\n");
+		pthread_mutex_unlock(&q->q_tail_lock);
+		return;
+	}
 	q->q_tail->next = n;
 	q->q_tail = n;
 	q->size++;
@@ -70,7 +79,7 @@ int popQueue(queue *q)
 	}
 	h = q->q_head->next->next;
 	q->q_head->next = h;
-	val = newh->content;
+	val = *(int*)newh->content;
 	//printf("get: %d\n", val);
 	//printf("head: %d\n", q->q_head->content);
 

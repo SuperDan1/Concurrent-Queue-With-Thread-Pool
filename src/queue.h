@@ -7,7 +7,7 @@
 
 typedef struct node
 {
-    int content;
+    void *content;
     struct node *next;
 } node;
 
@@ -17,14 +17,16 @@ typedef struct queue
     node *q_tail;
     pthread_mutex_t q_head_lock;
     pthread_mutex_t q_tail_lock;
+    uint32_t data_size;           // after the queue is initialized, the value is not allowed to change
+                                  // and read the value is not protected by lock. 
     uint32_t size;
     uint32_t max_size;
 } queue;
 
 node *initNode();
-queue *initQueue();
+queue *initQueue(const uint32_t data_size);
 
-void pushQueue(queue *q, int val);
+void pushQueue(queue *q, void *val);
 int popQueue(queue *q);
 
 bool IsQueueEmpty(queue *q);
