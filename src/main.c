@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <stdatomic.h>
 #include "queue.h"
+#include "thread_pool_manage.h"
 
 _Atomic long counter = ATOMIC_VAR_INIT(0L);
 
@@ -19,15 +20,13 @@ typedef struct threadArgs
 void *putArg(void *params)
 {
     threadArgs *args = params;
-    pushQueue(args->q, args->val);
-    
+    pushQueue(args->q, &args->val);
 }
 
 void *popArg(void *params)
 {
     queue *args = params;
     int v;
-
     while (1)
     {
         v = popQueue(args);
@@ -57,7 +56,7 @@ int main()
     struct timespec start_, end_;
 
     clock_gettime(CLOCK_REALTIME, &start_);
-    g_q = initQueue();
+    g_q = initQueue(sizeof(int));
     if (g_q == NULL)
     {
         printf("init queue failed!\n");
