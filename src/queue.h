@@ -37,4 +37,5 @@ bool IsQueueEmpty(listQueue *queue);
 
 void ShowQueueValue(listQueue *queue);
 
+uint32_t GetQueueSize(listQueue *queue);
 #endif

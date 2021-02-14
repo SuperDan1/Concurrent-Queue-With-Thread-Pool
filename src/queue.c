@@ -31,12 +31,16 @@ int32_t initQueue(listQueue *queue, uint32_t data_size)
 	int32_t retVal;
 	listNode *headNode = NULL;
 
-	int value = 0;
+	char *value = NULL;
+
+	value = (char *)malloc(data_size);
 	queue->data_size = data_size;
-	retVal = initNode(&headNode, &value, data_size);
+	retVal = initNode(&headNode, value, data_size);
 	if (unlikely(retVal != RETURN_OK))
 	{
 		printf("init head node failed.\n");
+		free(value);
+		return RETURN_ERROR;
 	}
 	queue->q_head = headNode;
 	queue->q_tail = headNode;
@@ -45,6 +49,7 @@ int32_t initQueue(listQueue *queue, uint32_t data_size)
 	pthread_mutex_init(&queue->q_head_lock, NULL);
 	pthread_mutex_init(&queue->q_tail_lock, NULL);
 	printf("init queue success.\n");
+	free(value);
 	return RETURN_OK;
 };
 
@@ -106,6 +111,15 @@ bool IsQueueEmpty(listQueue *queue)
 	IsEmpty = queue->size == 0;
 	pthread_mutex_unlock(&queue->q_head_lock);
 	return IsEmpty;
+}
+
+uint32_t GetQueueSize(listQueue *queue)
+{
+	uint32_t queueSize;
+	pthread_mutex_lock(&queue->q_head_lock);
+	queueSize = queue->size;
+	pthread_mutex_unlock(&queue->q_head_lock);
+	return queueSize;
 }
 
 void ShowQueueValue(listQueue *queue)
