@@ -5,6 +5,7 @@
 
 typedef struct ThreadPool
 {
+    bool isShutDown;
     pthread_mutex_t mutex;
     pthread_cond_t queue_ready;
     listQueue *taskQueue;

@@ -3,7 +3,6 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include <stdatomic.h>
 #include "queue.h"
 #include "thread_pool_manage.h"
 
@@ -94,7 +93,7 @@ void *popArg(void *params)
 
 void *myprocess(void *arg)
 {
-    printf("threadid is 0x%lx, working on task %d/n", pthread_self(), *(int *)arg);
+    printf("threadid is 0x%lx, working on task %d\n", pthread_self(), *(int *)arg);
     sleep(1); /*休息一秒，延长任务的执行时间*/
     return NULL;
 }
@@ -102,18 +101,20 @@ void *myprocess(void *arg)
 int main()
 {
     ThreadPool pool;
-    uint32_t threadNum = 3;
+    uint32_t threadNum = 10;
+    uint32_t taskNum = 100;
     TpInit(&pool, threadNum);
-    /*连续向池中投入10个任务*/
-    int *workingnum = (int *)malloc(sizeof(int) * 10);
+    /*连续向池中投入taskNum个任务*/
+    int *workingnum = (int *)malloc(sizeof(int) * taskNum);
     int i;
-    for (i = 0; i < 10; i++)
+    for (i = 0; i < taskNum; i++)
     {
         workingnum[i] = i;
         pool_add_worker(&pool, myprocess, &workingnum[i]);
     }
     /*等待所有任务完成*/
-    sleep(5);
+    sleep(30);
+    printf("queue size:%d\n", GetQueueSize(pool.taskQueue));
     TpDestroy(&pool);
     free(workingnum);
     return 0;
