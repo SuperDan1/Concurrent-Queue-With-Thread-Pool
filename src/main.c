@@ -94,7 +94,7 @@ void *popArg(void *params)
 void *myprocess(void *arg)
 {
     printf("threadid is 0x%lx, working on task %d\n", pthread_self(), *(int *)arg);
-    sleep(1); /*休息一秒，延长任务的执行时间*/
+    //sleep(1); /*休息一秒，延长任务的执行时间*/
     return NULL;
 }
 
@@ -102,7 +102,7 @@ int main()
 {
     ThreadPool pool;
     uint32_t threadNum = 10;
-    uint32_t taskNum = 100;
+    uint32_t taskNum = 20;
     TpInit(&pool, threadNum);
     /*连续向池中投入taskNum个任务*/
     int *workingnum = (int *)malloc(sizeof(int) * taskNum);
@@ -112,10 +112,12 @@ int main()
         workingnum[i] = i;
         pool_add_worker(&pool, myprocess, &workingnum[i]);
     }
-    /*等待所有任务完成*/
-    sleep(30);
-    printf("queue size:%d\n", GetQueueSize(pool.taskQueue));
-    TpDestroy(&pool);
     free(workingnum);
+    sleep(10);
+    /*等待所有任务完成*/
+    while (GetQueueSize(pool.taskQueue) != 0)
+    {
+    }
+    TpDestroy(&pool);
     return 0;
 }

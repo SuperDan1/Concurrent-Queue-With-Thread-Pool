@@ -39,7 +39,7 @@ int32_t initQueue(listQueue *queue, uint32_t data_size)
 	}
 	queue->q_head = headNode;
 	queue->q_tail = headNode;
-	queue->max_size = 200;
+	queue->max_size = 10000;
 	queue->size = 0;
 	pthread_mutex_init(&queue->q_head_lock, NULL);
 	pthread_mutex_init(&queue->q_tail_lock, NULL);

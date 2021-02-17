@@ -94,14 +94,21 @@ int32_t TpInit(ThreadPool *pool, const uint32_t threadNum)
     }
 }
 
-uint32_t pool_add_worker(ThreadPool *pool, void *(*process)(void *arg), void *arg)
+int32_t pool_add_worker(ThreadPool *pool, void *(*process)(void *arg), void *arg)
 {
+    int32_t retVal;
     /*构造一个新任务*/
     Threadworker *newworker = (Threadworker *)malloc(sizeof(Threadworker));
     newworker->process = process;
     newworker->arg = arg;
     /*将任务加入到等待队列中*/
-    pushQueue(pool->taskQueue, newworker);
+    retVal = pushQueue(pool->taskQueue, newworker);
+    if (unlikely(retVal != RETURN_OK))
+    {
+        printf("add task queue task failed.");
+        return retVal;
+    }
+
     // if (pool->taskQueue->size == 0)
     //     pthread_cond_signal(&(pool->queue_ready));
     /*等待队列中有任务了，唤醒一个等待线程；

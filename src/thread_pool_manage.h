@@ -18,7 +18,7 @@ typedef struct ThreadPool
 // 初始化线程池
 int32_t TpInit(ThreadPool *pool, const uint32_t threadNum);
 
-uint32_t pool_add_worker(ThreadPool *pool, void *(*process)(void *arg), void *arg);
+int32_t pool_add_worker(ThreadPool *pool, void *(*process)(void *arg), void *arg);
 //销毁线程池
 void TpDestroy(ThreadPool *pool);
 #endif
